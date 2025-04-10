@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dijkstra Simulation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 1rem;
+      text-align: center;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+      font-size: 1rem;
+      margin: 10px auto;
+      display: block;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin: 20px auto;
+    }
+    .btn {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    #log {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+      padding: 10px;
+      text-align: left;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dijkstra's Algorithm Simulation</h1>
+
+  <label for="matrixInput"><strong>Enter Adjacency Matrix (comma-separated rows):</strong></label>
+  <textarea id="matrixInput">0,15,0,20,0
+15,0,10,0,0
+0,10,0,25,30
+20,0,25,0,4
+0,0,30,4,0</textarea>
+
+  <label for="startNode"><strong>Start Node (e.g., 0):</strong></label>
+  <input type="number" id="startNode" value="0"/>
+
+  <br/>
+  <button class="btn" onclick="initGraph()">Initialize Graph</button>
+  <button class="btn" onclick="nextStep()">Next Step</button>
+  <button class="btn" onclick="reset()">Reset</button>
+
+  <canvas id="graphCanvas" width="600" height="400"></canvas>
+
+  <div id="log"></div>
+
+  <script>
+    let graph = [], positions = [], distances = [], visited = [], previous = [], step = 0, currentNode = null;
+
+    function parseMatrix() {
+      const input = document.getElementById("matrixInput").value.trim();
+      return input.split("\n").map(row => row.split(",").map(Number));
+    }
+
+    function drawGraph() {
+      const canvas = document.getElementById("graphCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const radius = 20;
+      const n = graph.length;
+      const angle = (2 * Math.PI) / n;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const nodeRadius = 150;
+
+      positions = [];
+
+      for (let i = 0; i < n; i++) {
+        const x = centerX + nodeRadius * Math.cos(i * angle);
+        const y = centerY + nodeRadius * Math.sin(i * angle);
+        positions.push({ x, y });
+      }
+
+      // Draw edges
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          if (graph[i][j] > 0) {
+            ctx.beginPath();
+            ctx.moveTo(positions[i].x, positions[i].y);
+            ctx.lineTo(positions[j].x, positions[j].y);
+            ctx.strokeStyle = "#000";
+            ctx.stroke();
+
+            // Weight label
+            const midX = (positions[i].x + positions[j].x) / 2;
+            const midY = (positions[i].y + positions[j].y) / 2;
+            ctx.fillStyle = "#000";
+            ctx.fillText(graph[i][j], midX, midY);
+          }
+        }
+      }
+
+      // Draw nodes
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc(positions[i].x, positions[i].y, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = visited[i] ? "#6c757d" : "#007bff";
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(i, positions[i].x, positions[i].y);
+      }
+    }
+
+    function initGraph() {
+      graph = parseMatrix();
+      const n = graph.length;
+      distances = Array(n).fill(Infinity);
+      visited = Array(n).fill(false);
+      previous = Array(n).fill(null);
+      const start = parseInt(document.getElementById("startNode").value);
+      distances[start] = 0;
+      step = 0;
+      currentNode = null;
+      drawGraph();
+      logStep(`Graph initialized with start node ${start}`);
+    }
+
+    function nextStep() {
+      const n = graph.length;
+
+      if (step >= n) {
+        logStep("Algorithm completed.");
+        return;
+      }
+
+      // Find unvisited node with smallest distance
+      let minDistance = Infinity;
+      let u = -1;
+      for (let i = 0; i < n; i++) {
+        if (!visited[i] && distances[i] < minDistance) {
+          minDistance = distances[i];
+          u = i;
+        }
+      }
+
+      if (u === -1) {
+        logStep("No more reachable nodes.");
+        return;
+      }
+
+      visited[u] = true;
+      currentNode = u;
+
+      for (let v = 0; v < n; v++) {
+        if (graph[u][v] > 0 && !visited[v]) {
+          const alt = distances[u] + graph[u][v];
+          if (alt < distances[v]) {
+            distances[v] = alt;
+            previous[v] = u;
+          }
+        }
+      }
+
+      drawGraph();
+      logStep(`Step ${step + 1}: Visited Node ${u}\nUpdated Distances: ${JSON.stringify(distances)}`);
+      step++;
+    }
+
+    function logStep(msg) {
+      const log = document.getElementById("log");
+      log.textContent += msg + "\n";
+    }
+
+    function reset() {
+      document.getElementById("log").textContent = "";
+      initGraph();
+    }
+  </script>
+</body>
+</html>
